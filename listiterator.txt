@@ -1,0 +1,249 @@
+template<class T>
+struct __ListNode
+{
+	__ListNode<T>* _next;
+	__ListNode<T>* _prev;
+	T _data;
+
+	__ListNode(const T& x)
+		:_data(x)
+		, _next(NULL)
+		, _prev(NULL)
+	{}
+};
+
+template<class T, class Ref, class Ptr>
+struct __ListIterator
+{
+	typedef __ListNode<T> Node;
+	typedef __ListIterator<T, Ref, Ptr> Self;
+
+	Node* _node;
+
+	__ListIterator(Node* x)
+		:_node(x)
+	{}
+
+	//T& operator*()
+	Ptr operator->()
+	{
+		return &(operator*())
+	}
+	Ref operator*()
+	{
+		return _node->_data;
+	}
+
+	Ptr operator->() const
+	{
+		return &(operator*()) const;
+	}
+
+	Ref operator*() const
+	{
+		return _node->_data const;
+	}
+	bool operator != (const Self& s)
+	{
+		return _node != s._node;
+	}
+
+	inline Self& operator++()
+	{
+		_node = _node->_next;
+		return *this;
+	}
+	Self& operator++(int)
+	{
+		//第一种先初始化再返回.
+		/*Self tmp(*this);
+		_node = _node->_next;
+		return tmp;*/
+
+		//第二种返回的时候再初始化.
+		Node* cur = _node;
+		_node = _node->_next;
+		return Self(cur);
+
+		//第一种做了三件事情. 首先调用了构造函数构造一个tmp,返回的时候再调用拷贝构造把自己拷给外部存储，最后调用析构函数让自己析构.
+		//第二种做了一件事情，在外部存储初始化一个tmp就Ok了. 所以效率来说第二种方法是最优解决方案.
+	}
+
+	inline Self& operator--()
+	{
+		_node = _node->_prev;
+		return *this;
+	}
+
+	Self& operator--(int)
+	{
+		Node* cur = _node;
+		_node = _node->_prev;
+
+		return Self(cur);
+	}
+
+	bool operator != (const Self& s) const
+	{
+		return this->_node != s._node;
+	}
+
+	bool operator ==(const Self& s) const
+	{
+		return !(operator!=(s));
+	}
+};
+
+template<class T>
+class List
+{
+	typedef __ListNode<T> Node;
+public:
+
+	typedef __ListIterator<T, T&, T*> Iterator;
+
+	typedef __ListIterator<const T, const T&, const T*> ConstIterator;
+
+	List()
+	{
+		_head = new Node(T());
+		_head->_next = _head;
+		_head->_prev = _head;
+	}
+
+	Iterator Begin()
+	{
+		return Iterator(_head->_next);
+	}
+
+	ConstIterator Begin() const
+	{
+		return ConstIterator(_head->_next);
+	}
+
+	Iterator End()
+	{
+		return Iterator(_head);
+	}
+
+	ConstIterator End() const
+	{
+		return ConstIterator(_head);
+	}
+
+	T& Front()
+	{
+		return _head->next;
+	}
+
+	T& back()
+	{
+		return _head->_prev;
+	}
+	void PushBack(const T& x)
+	{
+		Insert(End(), x);
+	}
+
+	void PushFront(const T& x)
+	{
+		Insert(Begin(), x);
+	}
+
+	void popFront()
+	{
+		earse(Begin());
+	}
+
+	void popBack()
+	{
+		earse(--End());
+	}
+
+	void Insert(Iterator pos, const T& x)
+	{
+		assert(pos._node);
+
+		Node* next = pos._node;
+		Node* prev = next->_prev;
+		Node* cur = new Node(x);
+
+		prev->_next = cur;
+		cur->_prev = prev;
+
+		cur->_next = next;
+		next->_prev = cur;
+	}
+
+
+	void earse(Iterator& it)
+	{
+		assert(it != End() && it._node);
+
+		Node* cur = it._node;
+		Node* prev = cur->_prev;
+		Node* next = cur->_next;
+
+		prev->_next = next;
+		next->_prev = prev;
+
+		delete cur;
+		it = prev;//这里发生了隐式转换 类似于 it = Iterator(prev); 单参数的构造函数. 就会发生隐式转换.	
+	}
+
+	void Clear()
+	{
+		Iterator it = Begin();
+		while (it != End())
+		{
+			Node* del = it._node;
+			++it;
+			delete del;
+		}
+		_head->_next = _head;
+		_head->_prev = _head;
+	}
+
+	Iterator Find(const T& x)
+	{
+		Iterator it = Begin();
+		while (it != End())
+		{
+			if (*it == x)
+				return it;
+			++it;
+		}
+
+		return End();
+	}
+
+protected:
+	Node* _head;
+};
+
+void Test()
+{
+	List<int> l;
+	l.PushBack(1);
+	l.PushBack(2);
+	l.PushBack(3);
+	l.PushBack(4);
+
+	List<int>::Iterator it = l.Begin();
+
+	while (it != l.End())
+	{
+		if (*it % 2 == 0)
+		{
+			l.earse(it);
+		}
+		++it;
+	}
+	it = l.Begin();
+	while (it != l.End())
+	{
+		cout << *it << " ";
+		++it;
+	}
+	cout << endl;
+}
